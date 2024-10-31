@@ -40,7 +40,10 @@ class Task:
         pygame.draw.ellipse(screen, colors[self.state],[self.x - R, self.y - R, 2 * R, 2 * R], 2)
         for ts in self.inps:
             pygame.draw.line(screen, (100, 100, 100), ts.getPos(), self.getPos(), 2)
-            drawText(screen, f"T{self.id}", self.x, self.y)
+        drawText(screen, f"T{self.id}", self.x, self.y)
+
+    def simulate(self):
+        pass
 
 
 def findPossibleTasks():
@@ -66,9 +69,10 @@ def main():
     global tasks, ts0, ts1
     pygame.init()
     screen=pygame.display.set_mode((WIDTH,HEIGHT))
+
     while True:
+        drag = pygame.key.get_pressed()[pygame.K_LSHIFT]
         for event in pygame.event.get():
-            drag = pygame.key.get_pressed()[pygame.K_LSHIFT]
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -101,13 +105,13 @@ def main():
                     performTasks()
                     findPossibleTasks()
 
-            screen.fill((255, 255, 255))
-            for ts in tasks:
-                #ts.simulate()
-                ts.draw(screen)
-            if drag and ts0 is not None:
-                pygame.draw.line(screen, (100, 100, 100), ts0.getPos(), event.pos, 2)
-            pygame.display.update()
-            pygame.time.delay(50)
+        screen.fill((255, 255, 255))
+        for ts in tasks:
+            #ts.simulate()
+            ts.draw(screen)
+        if drag and ts0 is not None:
+            pygame.draw.line(screen, (100, 100, 100), ts0.getPos(), event.pos, 2)
+        pygame.display.update()
+        pygame.time.delay(50)
 
 main()
