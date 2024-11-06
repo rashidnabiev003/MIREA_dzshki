@@ -2,7 +2,6 @@ import numpy as np
 import pygame, sys
 import time
 import matplotlib.pyplot as plt
-from PIL.ImageColor import colormap
 
 WIDTH = 1000
 HEIGHT = 800
@@ -47,8 +46,8 @@ class Robot:
             d=dist(p1, p2)
             if d>0:
                 v=v/d
-                self.x+=v[0]*5
-                self.y+=v[1]*5
+                self.x+=v[0]*20
+                self.y+=v[1]*20
         if self.attachedObj is not None:
             self.attachedObj.x=self.x
             self.attachedObj.y=self.y
