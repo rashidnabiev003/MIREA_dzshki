@@ -6,12 +6,10 @@ import matplotlib.pyplot as plt
 WIDTH = 1000
 HEIGHT = 800
 
-
 def dist(p1, p2):
     dx = p2[0] - p1[0]
     dy = p2[1] - p1[1]
     return np.sqrt(dx * dx + dy * dy)
-
 
 class Obj:
     def __init__(self, x, y, color):
@@ -26,9 +24,7 @@ class Obj:
 
     def draw(self, screen):
         r = 10
-        pygame.draw.ellipse(screen, self.color,
-                            [self.x - r, self.y - r, 2 * r, 2 * r], 2)
-
+        pygame.draw.ellipse(screen, self.color, [self.x - r, self.y - r, 2 * r, 2 * r], 2)
 
 class Robot:
     def __init__(self, x, y):
@@ -42,8 +38,7 @@ class Robot:
 
     def draw(self, screen):
         r = 20
-        pygame.draw.ellipse(screen, (255, 0, 0),
-                            [self.x - r, self.y - r, 2 * r, 2 * r], 2)
+        pygame.draw.ellipse(screen, (255, 0, 0), [self.x - r, self.y - r, 2 * r, 2 * r], 2)
 
     def simulate(self):
         if self.target is not None:
@@ -79,6 +74,11 @@ class Robot:
         if obj is not None:
             self.attachedObj = obj
 
+    def reset(self):
+        self.attachedObj = None
+        self.target = None
+        self.x = 0
+        self.y = 0
 
 def distributeTasks(robots, objs, goal):
     for r in robots:
@@ -97,40 +97,24 @@ def distributeTasks(robots, objs, goal):
         if r.target is None and r.attachedObj is None:
             obj = r.findNearestObj(objs)
             if obj is None:
+                r.target = None  # No tasks left, robot stops moving
                 continue
             if obj.reservedRobot is not None:
                 continue
             r.target = obj.getPos()
             obj.reservedRobot = r
 
-
 def checkMission(robots, objs, goal):
-    for r in robots:
-        if dist(r.getPos(), goal.getPos()) > 20:
-            return False
-    for o in objs:
-        if o.reservedRobot is None:
-            return False
-    return True
-
+    if all(o.finished for o in objs):
+        return True
+    return False
 
 def generateObjects(N):
     res = []
     for i in range(N):
-        o = Obj(np.random.randint(50, WIDTH - 50),
-                np.random.randint(50, HEIGHT - 50), (0, 255, 0))
+        o = Obj(np.random.randint(50, WIDTH - 50), np.random.randint(50, HEIGHT - 50), (0, 255, 0))
         res.append(o)
     return res
-
-
-Robots = [
-    Robot(150, 150),
-    Robot(250, 250),
-    Robot(350, 350),
-    Robot(450, 450),
-    Robot(550, 550)
-]
-
 
 def main(num_robots, num_objs):
     pygame.init()
@@ -140,24 +124,26 @@ def main(num_robots, num_objs):
     objs = generateObjects(num_objs)
     goal = Obj(750, 450, (0, 0, 255))
 
+    robots = [Robot(150 + i * 100, 150 + i * 100) for i in range(num_robots)]
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-        if checkMission(Robots[:num_robots], objs[:num_objs], goal):
+        if checkMission(robots, objs, goal):
             break
 
         screen.fill((255, 255, 255))
 
-        distributeTasks(Robots[:num_robots], objs[:num_objs], goal)
+        distributeTasks(robots, objs, goal)
 
-        for r in Robots[:num_robots]:
+        for r in robots:
             r.simulate()
             r.draw(screen)
 
-        for o in objs[:num_objs]:
+        for o in objs:
             o.draw(screen)
 
         goal.draw(screen)
@@ -167,20 +153,41 @@ def main(num_robots, num_objs):
     end = time.time()
     return end - start
 
+def resetRobots(robots):
+    for r in robots:
+        r.reset()
 
-n_robots = [1, 2, 3, 4, 5]
-n_objs = [5, 5, 10, 10, 15]
 
-T1_time = []
-T2_time = []
+n_robots = [1, 2, 3, 4, 5, 6]
+n_objs = [5, 10, 15]
 
-for i in range(len(n_robots)):
-    T1_time.append(main(n_robots[i], n_objs[i]))
-    T2_time.append(T1_time[i] * n_robots[i])
+results = []
 
-print(*T1_time)
-print("\n", T2_time)
+for m in n_objs:
+    T1_time = []
+    T2_time = []
+    robots = [Robot(150 + i * 100, 150 + i * 100) for i in range(max(n_robots))]
+    for n in n_robots:
+        resetRobots(robots)
+        t = main(n, m)
+        T1_time.append(t)
+        T2_time.append(t * n)
+    results.append((m, T1_time, T2_time))
 
-plt.plot(n_robots, T1_time, color='red', marker='o')
-plt.plot(n_robots, T2_time, color='blue', marker='*')
-plt.show()
+
+for m, T1_time, T2_time in results:
+    print(f"Results for M={m} objects:")
+    print("Number of Robots:", n_robots)
+    print("T1 Times:", T1_time)
+    print("T2 Times:", T2_time)
+    print()
+
+    plt.figure()
+    plt.plot(n_robots, T1_time, label=f'T1 (M={m})', marker='o', color='red')
+    plt.plot(n_robots, T2_time, label=f'T2 (M={m})', marker='*', color='blue')
+    plt.xlabel('Number of Robots')
+    plt.ylabel('Time (s)')
+    plt.title(f'Results for M={m} Objects')
+    plt.legend()
+    plt.grid()
+    plt.show()
